@@ -1,16 +1,24 @@
 #ifndef PATH_PLANNING_HPP
 #define PATH_PLANNING_HPP
 
+#include "helpers.hpp"
 #include <vector>
+
+/*==============================================================================
+                                Class definition
+==============================================================================*/
 
 class MotionPlanner {
 public:
-    MotionPlanner(double dist_inc) : dist_inc(dist_inc) {}
-    void GenerateTrajectory(double car_x, double car_y, double car_yaw,
-                            std::vector<double> &next_x_vals, 
+    MotionPlanner(int traj_points_num, double dist_inc) :
+        traj_points_num_(traj_points_num), dist_inc_(dist_inc) {}
+
+    void GenerateTrajectory(const Car &car, const Map &map,
+                            std::vector<double> &next_x_vals,
                             std::vector<double> &next_y_vals);
 private:
-    double dist_inc;
+    int traj_points_num_;
+    double dist_inc_;
 };
 
 #endif  // PATH_PLANNING_HPP
