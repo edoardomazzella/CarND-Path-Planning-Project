@@ -11,17 +11,6 @@
 class MotionPlanner {
 public:
     /**
-     * Map struct type definition containing vectors of waypoints coordinates.
-     */
-    struct Map {
-        std::vector<double> waypoints_x;
-        std::vector<double> waypoints_y;
-        std::vector<double> waypoints_s;
-        std::vector<double> waypoints_dx;
-        std::vector<double> waypoints_dy;
-    };
-
-    /**
      * Car struct type definition containing car coordinates, yaw and speed.
      */
     struct Car {
@@ -33,21 +22,44 @@ public:
         double speed;
     };
 
+    /**
+     * Map struct type definition containing vectors of waypoints coordinates.
+     */
+    struct Map {
+        std::vector<double> waypoints_x;
+        std::vector<double> waypoints_y;
+        std::vector<double> waypoints_s;
+        std::vector<double> waypoints_dx;
+        std::vector<double> waypoints_dy;
+    };
+
+    /**
+     * Path struct type definition.
+     */
+    struct Path {
+        std::vector<double> x;
+        std::vector<double> y;
+        double end_s;
+        double end_d;
+    };
+
     /** MotionPlanner constructor */
-    MotionPlanner(double ref_vel) : lane_(1), ref_vel_(ref_vel) {}
+    MotionPlanner(double max_vel, double time_step = .02, int lane = 1) : 
+        max_vel_(max_vel), time_step_(time_step), lane_(lane) {}
 
     /** Function that returns the planned trajectory */
     void GenerateTrajectory(
-                            const Car &car, const Map &map,
-                            const std::vector<double> &previous_path_x,
-                            const std::vector<double> &previous_path_y,
-                            double end_path_s, double end_path_d,
+                            Car &car, const Map &map,
+                            const Path &previous_path,
+                            const std::vector<std::vector<double>> &
+                            sensor_fusion,
                             std::vector<double> &next_x_vals,
                             std::vector<double> &next_y_vals
                            );
 private:
+    double max_vel_;
+    double time_step_;
     int lane_;
-    double ref_vel_;
 };
 
 #endif  // PATH_PLANNING_HPP

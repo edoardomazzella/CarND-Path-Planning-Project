@@ -21,8 +21,8 @@ int main() {
   uWS::Hub h;
 
   // Instantiate MotionPlanner object
-  double ref_vel = 49.5;
-  MotionPlanner mp(ref_vel);
+  double max_vel = 49.5;
+  MotionPlanner mp(max_vel);
 
   // Load up map values for waypoint's x,y,s and d normalized normal vectors
   MotionPlanner::Map map;
@@ -80,14 +80,14 @@ int main() {
                                         };
 
           // Previous path data given to the Planner
-          auto previous_path_x = j[1]["previous_path_x"];
-          auto previous_path_y = j[1]["previous_path_y"];
-          // Previous path's end s and d values
-          double end_path_s = j[1]["end_path_s"];
-          double end_path_d = j[1]["end_path_d"];
+          MotionPlanner::Path previous_path = 
+          {
+            j[1]["previous_path_x"], j[1]["previous_path_y"],
+            j[1]["end_path_s"], j[1]["end_path_d"]
+          };
 
           // Sensor Fusion Data, a list of all other cars on the same sideyy
-          //   of the road.
+          // of the road.
           auto sensor_fusion = j[1]["sensor_fusion"];
 
           // Define the actual (x,y) points to be used for the planner
@@ -98,9 +98,7 @@ int main() {
            *   sequentially every .02 seconds
            */
           mp.GenerateTrajectory(
-                                main_car, map,
-                                previous_path_x, previous_path_y,
-                                end_path_s, end_path_d,
+                                main_car, map, previous_path, sensor_fusion,
                                 next_x_vals, next_y_vals
                                );
 
