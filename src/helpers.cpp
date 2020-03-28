@@ -66,8 +66,11 @@ int ClosestWaypoint(
 
 /*============================================================================*/
 
-int NextWaypoint(double x, double y, double theta, const vector<double> &maps_x,
-                 const vector<double> &maps_y) {
+int NextWaypoint(
+                 double x, double y, double theta, const vector<double> &maps_x,
+                 const vector<double> &maps_y
+                )
+{
   int closestWaypoint = ClosestWaypoint(x,y,maps_x,maps_y);
 
   double map_x = maps_x[closestWaypoint];
@@ -91,10 +94,10 @@ int NextWaypoint(double x, double y, double theta, const vector<double> &maps_x,
 /*============================================================================*/
 
 vector<double> getFrenet(
-                         double x, double y, double theta, 
-                         const vector<double> &maps_x, 
+                         double x, double y, double theta,
+                         const vector<double> &maps_x,
                          const vector<double> &maps_y
-                        ) 
+                        )
 {
   int next_wp = NextWaypoint(x,y, theta, maps_x,maps_y);
 
@@ -139,9 +142,12 @@ vector<double> getFrenet(
 
 /*============================================================================*/
 
-vector<double> getXY(double s, double d, const vector<double> &maps_s, 
-                     const vector<double> &maps_x, 
-                     const vector<double> &maps_y) {
+vector<double> getXY(
+                     double s, double d, const vector<double> &maps_s,
+                     const vector<double> &maps_x,
+                     const vector<double> &maps_y
+                    )
+{
   int prev_wp = -1;
 
   while (s > maps_s[prev_wp+1] && (prev_wp < (int)(maps_s.size()-1))) {
