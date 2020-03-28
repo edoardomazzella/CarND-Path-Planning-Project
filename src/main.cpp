@@ -23,7 +23,7 @@ int main() {
   MotionPlanner mp(traj_points_num, dist_inc);
 
   // Load up map values for waypoint's x,y,s and d normalized normal vectors
-  Map map;
+  MotionPlanner::Map map;
 
   // Waypoint map to read from
   string map_file_ = "../data/highway_map.csv";
@@ -71,11 +71,11 @@ int main() {
           // j[1] is the data JSON object
 
           // Main car's localization Data
-          Car main_car = {
-                            j[1]["x"], j[1]["y"],
-                            j[1]["s"], j[1]["d"],
-                            j[1]["yaw"], j[1]["speed"]
-                         };
+          MotionPlanner::Car main_car = {
+                                         j[1]["x"], j[1]["y"],
+                                         j[1]["s"], j[1]["d"],
+                                         j[1]["yaw"], j[1]["speed"]
+                                        };
 
           // Previous path data given to the Planner
           auto previous_path_x = j[1]["previous_path_x"];

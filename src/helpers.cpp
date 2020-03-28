@@ -5,10 +5,12 @@
 using std::string;
 using std::vector;
 
-// Checks if the SocketIO event has JSON data.
-// If there is data the JSON object in string format will be returned,
-//   else the empty string "" will be returned.
-string hasData(string s) {
+/*==============================================================================
+                              Function Definitions
+==============================================================================*/
+
+string hasData(string s)
+{
   auto found_null = s.find("null");
   auto b1 = s.find_first_of("[");
   auto b2 = s.find_first_of("}");
@@ -20,24 +22,32 @@ string hasData(string s) {
   return "";
 }
 
-//
-// Helper functions related to waypoints and converting from XY to Frenet
-//   or vice versa
-//
+/*============================================================================*/
 
-// For converting back and forth between radians and degrees.
 constexpr double pi() { return M_PI; }
+
+/*============================================================================*/
+
 double deg2rad(double x) { return x * pi() / 180; }
+
+/*============================================================================*/
+
 double rad2deg(double x) { return x * 180 / pi(); }
 
-// Calculate distance between two points
-double distance(double x1, double y1, double x2, double y2) {
+/*============================================================================*/
+
+double distance(double x1, double y1, double x2, double y2)
+{
   return sqrt((x2-x1)*(x2-x1)+(y2-y1)*(y2-y1));
 }
 
-// Calculate closest waypoint to current x, y position
-int ClosestWaypoint(double x, double y, const vector<double> &maps_x, 
-                    const vector<double> &maps_y) {
+/*============================================================================*/
+
+int ClosestWaypoint(
+                    double x, double y, const vector<double> &maps_x,
+                    const vector<double> &maps_y
+                   )
+{
   double closestLen = 100000; //large number
   int closestWaypoint = 0;
 
@@ -54,8 +64,9 @@ int ClosestWaypoint(double x, double y, const vector<double> &maps_x,
   return closestWaypoint;
 }
 
-// Returns next waypoint of the closest waypoint
-int NextWaypoint(double x, double y, double theta, const vector<double> &maps_x, 
+/*============================================================================*/
+
+int NextWaypoint(double x, double y, double theta, const vector<double> &maps_x,
                  const vector<double> &maps_y) {
   int closestWaypoint = ClosestWaypoint(x,y,maps_x,maps_y);
 
@@ -77,10 +88,14 @@ int NextWaypoint(double x, double y, double theta, const vector<double> &maps_x,
   return closestWaypoint;
 }
 
-// Transform from Cartesian x,y coordinates to Frenet s,d coordinates
-vector<double> getFrenet(double x, double y, double theta, 
+/*============================================================================*/
+
+vector<double> getFrenet(
+                         double x, double y, double theta, 
                          const vector<double> &maps_x, 
-                         const vector<double> &maps_y) {
+                         const vector<double> &maps_y
+                        ) 
+{
   int next_wp = NextWaypoint(x,y, theta, maps_x,maps_y);
 
   int prev_wp;
@@ -122,7 +137,8 @@ vector<double> getFrenet(double x, double y, double theta,
   return {frenet_s,frenet_d};
 }
 
-// Transform from Frenet s,d coordinates to Cartesian x,y
+/*============================================================================*/
+
 vector<double> getXY(double s, double d, const vector<double> &maps_s, 
                      const vector<double> &maps_x, 
                      const vector<double> &maps_y) {
@@ -149,3 +165,5 @@ vector<double> getXY(double s, double d, const vector<double> &maps_s,
 
   return {x,y};
 }
+
+/*============================================================================*/

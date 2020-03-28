@@ -1,15 +1,19 @@
 #include "path_planning.hpp"
+#include "helpers.hpp"
 #include <math.h>
 
 using std::vector;
 
 /*==============================================================================
-                            Member Functions Definitions
+                        Public Member Function Definitions
 ==============================================================================*/
 
-void MotionPlanner::GenerateTrajectory(const Car &car, const Map &map,
-                    vector<double> &next_x_vals, vector<double> &next_y_vals) {
-
+void MotionPlanner::GenerateTrajectory(
+                                       const Car &car, const Map &map,
+                                       vector<double> &next_x_vals,
+                                       vector<double> &next_y_vals
+                                      )
+{
     for (unsigned int i = 0; i < traj_points_num_; ++i) {
         double next_s = car.s + (i+1) * dist_inc_;
         double next_d = 6;
@@ -19,3 +23,5 @@ void MotionPlanner::GenerateTrajectory(const Car &car, const Map &map,
         next_y_vals.push_back(xy[1]);
     }
 }
+
+/*============================================================================*/
