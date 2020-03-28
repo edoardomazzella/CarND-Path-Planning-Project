@@ -132,7 +132,7 @@ void MotionPlanner::GenerateTrajectory(
     s.set_points(ptsx, ptsy);
 
     // Start with all the previous path points from last time
-    for (int i = 0; i < previous_path.x.size(); ++i)
+    for (int i = 0; i < prev_size; ++i)
     {
         next_x_vals.push_back(previous_path.x[i]);
         next_y_vals.push_back(previous_path.y[i]);
@@ -145,9 +145,8 @@ void MotionPlanner::GenerateTrajectory(
     double target_dist = sqrt(pow(target_x, 2.0) + pow(target_y, 2.0));
 
     // Fill up the rest of the path after filling it with the previous point,
-    // here we will always output 50 points
     double x_add_on = 0;
-    for (unsigned int i = 1; i <= 50 - previous_path.x.size(); ++i)
+    for (unsigned int i = 1; i <= points_num_ - prev_size; ++i)
     {
         double ref_vel_mps = ref_vel_ / 2.24; // conversion to meters/second
         double N = target_dist / (time_step_ * (ref_vel_mps));

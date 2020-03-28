@@ -44,8 +44,10 @@ public:
     };
 
     /** MotionPlanner constructor */
-    MotionPlanner(double max_vel, double time_step = .02, int lane = 1) : 
-        max_vel_(max_vel), time_step_(time_step), lane_(lane) {}
+    MotionPlanner(double max_vel, double time_step = .02, int lane = 1,
+                  int points_num = 50) :
+        max_vel_(max_vel), time_step_(time_step), lane_(lane),
+        points_num_(points_num) {}
 
     /** Function that returns the planned trajectory */
     void GenerateTrajectory(
@@ -61,6 +63,7 @@ private:
     double max_vel_;
     double time_step_;
     int lane_;
+    int points_num_;
 };
 
 #endif  // PATH_PLANNING_HPP
