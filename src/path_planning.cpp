@@ -20,6 +20,7 @@ void MotionPlanner::GenerateTrajectory(
                                       )
 {
     int prev_size = previous_path.x.size();
+    std::cout << prev_size << std::endl;
 
     if (prev_size > 0) { car.s = previous_path.end_s; }
 
@@ -45,9 +46,13 @@ void MotionPlanner::GenerateTrajectory(
                           time_step_ * other_car.speed);
 
             // Check s values greater than mine and s gap
-            if((other_car.s > car.s) && (other_car.s - car.s) < 30)
+            if ((other_car.s > car.s) && (other_car.s - car.s) < 30)
             {
                 too_close = true;
+                if (lane_ > 0)
+                {
+                    lane_ = 0;
+                }
             }
         }
     }
