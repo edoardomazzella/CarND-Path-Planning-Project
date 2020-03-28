@@ -9,8 +9,6 @@
 #include "json.hpp"
 #include "path_planning.hpp"
 
-#include <typeinfo>
-
 // for convenience
 using nlohmann::json;
 using std::string;

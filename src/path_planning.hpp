@@ -10,9 +10,7 @@
 /* MotionPlanner class definition */
 class MotionPlanner {
 public:
-    /**
-     * Car struct type definition containing car coordinates, yaw and speed.
-     */
+    /** Car struct type definition containing car coordinates, yaw and speed. */
     struct Car {
         double x;
         double y;
@@ -22,9 +20,7 @@ public:
         double speed;
     };
 
-    /**
-     * Map struct type definition containing vectors of waypoints coordinates.
-     */
+    /**  Map struct type definition containing vectors of waypoints coordinates. */
     struct Map {
         std::vector<double> waypoints_x;
         std::vector<double> waypoints_y;
@@ -33,9 +29,7 @@ public:
         std::vector<double> waypoints_dy;
     };
 
-    /**
-     * Path struct type definition.
-     */
+    /** Path struct type definition. */
     struct Path {
         std::vector<double> x;
         std::vector<double> y;
@@ -47,11 +41,11 @@ public:
     MotionPlanner(double max_vel, double time_step = .02, int lane = 1,
                   int points_num = 50) :
         max_vel_(max_vel), time_step_(time_step), lane_(lane),
-        points_num_(points_num) {}
+        points_num_(points_num), ref_vel_(0) {}
 
     /** Function that returns the planned trajectory */
     void GenerateTrajectory(
-                            Car &car, const Map &map,
+                            Car &main_car, const Map &map,
                             const Path &previous_path,
                             const std::vector<std::vector<double>> &
                             sensor_fusion,
@@ -59,11 +53,16 @@ public:
                             std::vector<double> &next_y_vals
                            );
 private:
-    double ref_vel_ = 0;
-    double max_vel_;
-    double time_step_;
-    int lane_;
-    int points_num_;
+    double max_vel_; /** < Maximum desired velocity */
+    double time_step_; /** < Time step */
+    int lane_; /** < Selected lane */
+    int points_num_; /** < Number of points in the generated trajectory */
+    double ref_vel_ ; /** < Reference velocity */
+
+    /** Function to adapt velocity */
+    //double AdaptVelocity_(const Car &main_car, const Car &car_in_lane);
+    /** Function to compute the lane choice cost */
+    //int FindBestLane_();
 };
 
 #endif  // PATH_PLANNING_HPP
