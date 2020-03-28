@@ -1,6 +1,7 @@
 #ifndef PATH_PLANNING_HPP
 #define PATH_PLANNING_HPP
 
+#include "spline.h"
 #include <vector>
 
 /*==============================================================================
