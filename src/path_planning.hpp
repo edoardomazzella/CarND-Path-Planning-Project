@@ -57,6 +57,7 @@ public:
                             std::vector<double> &next_y_vals
                            );
 private:
+    double ref_vel_ = 0;
     double max_vel_;
     double time_step_;
     int lane_;

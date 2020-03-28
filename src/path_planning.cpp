@@ -20,9 +20,7 @@ void MotionPlanner::GenerateTrajectory(
                                       )
 {
     int prev_size = previous_path.x.size();
-    
-    double ref_vel = car.speed;
-    std::cout << car.speed << std::endl;
+
     if (prev_size > 0) { car.s = previous_path.end_s; }
 
     bool too_close = false;
@@ -34,7 +32,7 @@ void MotionPlanner::GenerateTrajectory(
         // If other_car is in my lane
         other_car.d = sensor_fusion[i][6];
         if (
-            other_car.d < (2 + 4 * lane_ + 2) && 
+            other_car.d < (2 + 4 * lane_ + 2) &&
             other_car.d > (2 + 4 * lane_ - 2)
            )
         {
@@ -43,7 +41,7 @@ void MotionPlanner::GenerateTrajectory(
             other_car.speed = sqrt(pow(vx, 2.0) + pow(vy, 2.0));
 
             // Predict where the other car will be in the future based on speed
-            other_car.s = sensor_fusion[i][5] + ((double) prev_size * 
+            other_car.s = sensor_fusion[i][5] + ((double) prev_size *
                           time_step_ * other_car.speed);
 
             // Check s values greater than mine and s gap
@@ -56,15 +54,15 @@ void MotionPlanner::GenerateTrajectory(
 
     if (true == too_close)
     {
-        ref_vel -=.224;
+        ref_vel_ -=.224;
     }
-    else if (ref_vel < max_vel_)
+    else if (ref_vel_ < max_vel_)
     {
-        ref_vel += .224; 
+        ref_vel_ += .224;
     }
-    else 
-    { 
-        // intentionally left empty  
+    else
+    {
+        // intentionally left empty
     }
 
     // Create a list of widely spaced (x,y) waypoints, evenly spaced at 30m
@@ -109,8 +107,8 @@ void MotionPlanner::GenerateTrajectory(
     for (unsigned int i = 0; i < 3; ++i)
     {
         vector<double> next_wp = getXY(
-                                        car.s + (i + 1) * 30, (2 + 4 * lane_), 
-                                        map.waypoints_s, map.waypoints_x,     
+                                        car.s + (i + 1) * 30, (2 + 4 * lane_),
+                                        map.waypoints_s, map.waypoints_x,
                                         map.waypoints_y
                                       );
         ptsx.push_back(next_wp[0]);
@@ -132,7 +130,7 @@ void MotionPlanner::GenerateTrajectory(
 
     // Set (x,y) points to the spline
     s.set_points(ptsx, ptsy);
-    
+
     // Start with all the previous path points from last time
     for (int i = 0; i < previous_path.x.size(); ++i)
     {
@@ -149,9 +147,9 @@ void MotionPlanner::GenerateTrajectory(
     // Fill up the rest of the path after filling it with the previous point,
     // here we will always output 50 points
     double x_add_on = 0;
-    for (unsigned int i = 1; i <= 50 - previous_path.x.size(); ++i) 
+    for (unsigned int i = 1; i <= 50 - previous_path.x.size(); ++i)
     {
-        double ref_vel_mps = ref_vel / 2.24; // conversion to meters/second
+        double ref_vel_mps = ref_vel_ / 2.24; // conversion to meters/second
         double N = target_dist / (time_step_ * (ref_vel_mps));
         double x_point = x_add_on + target_x / N;
         double y_point = s(x_point);
@@ -168,7 +166,6 @@ void MotionPlanner::GenerateTrajectory(
         next_x_vals.push_back(x_point);
         next_y_vals.push_back(y_point);
     }
-    std::cout << next_x_vals.size() << std::endl;
 }
 
 /*============================================================================*/

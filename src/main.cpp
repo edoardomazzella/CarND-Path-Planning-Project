@@ -80,7 +80,7 @@ int main() {
                                         };
 
           // Previous path data given to the Planner
-          MotionPlanner::Path previous_path = 
+          MotionPlanner::Path previous_path =
           {
             j[1]["previous_path_x"], j[1]["previous_path_y"],
             j[1]["end_path_s"], j[1]["end_path_d"]
