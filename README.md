@@ -1,44 +1,26 @@
-# **Advanced Lane Finding Project**
+# **Path Planning Project**
 
-The goals / steps of this project are the following:
-
-* Compute the camera calibration matrix and distortion coefficients given a set of chessboard images.
-* Apply a distortion correction to raw images.
-* Use color transforms, gradients, etc., to create a thresholded binary image.
-* Apply a perspective transform to rectify binary image ("birds-eye view").
-* Detect lane pixels and fit to find the lane boundary.
-* Determine the curvature of the lane and vehicle position with respect to center.
-* Warp the detected lane boundaries back onto the original image.
-* Output visual display of the lane boundaries and numerical estimation of lane curvature and vehicle position.
+In this project your goal is to safely navigate around a virtual highway with other traffic that is driving +-10 MPH of the 50 MPH speed limit. You will be provided the car's localization and sensor fusion data, there is also a sparse map list of waypoints around the highway. The car should try to go as close as possible to the 50 MPH speed limit, which means passing slower traffic when possible, note that other cars will try to change lanes too. The car should avoid hitting other cars at all cost as well as driving inside of the marked road lanes at all times, unless going from one lane to another. The car should be able to make one complete loop around the 6946m highway. Since the car is trying to go 50 MPH, it should take a little over 5 minutes to complete 1 loop. Also the car should not experience total acceleration over 10 m/s^2 and jerk that is greater than 10 m/s^3.
 
 [//]: # "Image References"
 
 [image1]: ./examples/undistort_output.png "Undistorted"
-[image2]: ./test_images/test1.jpg "Road Transformed"
-[image3]: ./doc_images/gr_binary.jpg "Gradient Binary"
-[image4]: ./examples/warped_straight_lines.jpg "Warp Example"
-[image5]: ./examples/color_fit_lines.jpg "Fit Visual"
-[image6]: ./output_images/straight_lines1.jpg "Output"
-[image7]: ./doc_images/undist.jpg "Undistorted road"
-[image8]: ./doc_images/color_binary.jpg "Color Selection"
-[image9]: ./doc_images/combined_binary.jpg "Resulting Binary"
-[video1]: ./project_video.mp4 "Video"
 
-## [Rubric](https://review.udacity.com/#!/rubrics/571/view) Points
+## [Rubric](https://review.udacity.com/#!/rubrics/1971/view) Points
 
 ### Here I will consider the rubric points individually and describe how I addressed each point in my implementation.  
 
 ---
 
-### Writeup / README
+### Compilation
 
-#### 1. Provide a Writeup / README that includes all the rubric points and how you addressed each one.  You can submit your writeup as markdown or pdf.  [Here](https://github.com/udacity/CarND-Advanced-Lane-Lines/blob/master/writeup_template.md) is a template writeup for this project you can use as a guide and a starting point.  
+#### 1. The code compiles correctly.  
 
 You're reading it!
 
-### Camera Calibration
+### Valid Trajectories
 
-#### 1. Briefly state how you computed the camera matrix and distortion coefficients. Provide an example of a distortion corrected calibration image.
+#### 1. The car is able to drive at least 4.32 miles without incident.
 
 The code for this step is contained in the first code cell of the IPython notebook located in "./P2.ipynb".  
 
@@ -48,9 +30,19 @@ I then used the output `objpoints` and `imgpoints` to compute the camera calibra
 
 ![alt text][image1]
 
-### Pipeline (single images)
+#### 2. The car drives according to the speed limit.
 
-#### 1. Provide an example of a distortion-corrected image.
+#### 3. Max Acceleration and Jerk are not Exceeded.
+
+#### 4. Car does not have collisions.
+
+#### 5. The car stays in its lane, except for the time between changing lanes.
+
+#### 6. The car is able to change lanes
+
+### Reflection
+
+#### 1. There is a reflection on how to generate paths.
 
 To demonstrate this step, I will describe how I apply the distortion correction to one of the test images like this one:
 ![alt text][image2]
@@ -58,76 +50,3 @@ To demonstrate this step, I will describe how I apply the distortion correction 
 In order to do it the points computed during the camera calibration step have been used to undistort the image through the `cv2.undistort()` function obtaining the following result:
 
 ![alt text][image7]
-
-#### 2. Describe how (and identify where in your code) you used color transforms, gradients or other methods to create a thresholded binary image.  Provide an example of a binary image result.
-
-I used a combination of color and gradient thresholds to generate a binary image. 
-
-In the 6th code block the gradient thresholding functions are implemented providing an API that permits to mix different techniques like Sobel X, Sobel Y, magnitude and direction thresholding. The final gradient binary mask is obtained through the combination of masks in the 7th code block.
-
-Here's an example of my output for this step:
-
-![alt text][image3]
-
-In the 8th block of code a function for color selection is defined in order to select white and yellow pixels of the image:
-
-![alt text][image8]
-
-Applying the element-wise or operator we obtain the following binary image that will be used to detect lines after perspective distortion:
-
-![alt text][image9]
-
-#### 3. Describe how (and identify where in your code) you performed a perspective transform and provide an example of a transformed image.
-
-The perspecitve transformation has been applied in the 13th code block through `cv2.warpPerspective()` after computing the perspective matrix and its inverse in block 11 using `getPerspectiveMatrix()` function. The points for transforming the perspective have been chosen like the following, in order to get a lane distance of 800 pixels and a length of 720 pixels for about 20 meters of road 
-
-This resulted in the following source and destination points:
-
-|  Source   | Destination |
-| :-------: | :---------: |
-| 707, 462  |   1040, 0   |
-| 1043, 672 |  1040, 719  |
-| 275, 677  |  240, 719   |
-| 578, 462  |   240, 0    |
-
-I verified that my perspective transform was working as expected by drawing the `src` and `dst` points onto a test image and its warped counterpart to verify that the lines appear parallel in the warped image.
-
-![alt text][image4]
-
-#### 4. Describe how (and identify where in your code) you identified lane-line pixels and fit their positions with a polynomial?
-
-Then I detected the lines points through the histogram and sliding window technique as described in the lessons and  through `fit_poly()` function (`helpers.py`) i obtained  two 2nd order polynomial like these:
-
-![alt text][image5]
-
-#### 5. Describe how (and identify where in your code) you calculated the radius of curvature of the lane and the position of the vehicle with respect to center.
-
-I did this in function `compute_curvature()` in `helpers.py` and part of the code is reported below. The first two variables has been computed based on my perspective transformation.
-
-    ym_per_pix = 20 / 720
-    xm_per_pix = 3.7 / 800
-    fit_cr = np.polyfit(ally * ym_per_pix, allx * xm_per_pix, 2)
-    curvature = ((1 + (2*fit_cr[0]*img.shape[0]*ym_per_pix + fit_cr[1])**2)**1.5) / np.absolute(2*fit_cr[0])
-#### 6. Provide an example image of your result plotted back down onto the road such that the lane area is identified clearly.
-
-I implemented this step in lines  through  `drawLane()` in `helpers.py`.  Here is an example of my result on a test image:
-
-![alt text][image6]
-
----
-
-### Pipeline (video)
-
-#### 1. Provide a link to your final video output.  Your pipeline should perform reasonably well on the entire project video (wobbly lines are ok but no catastrophic failures that would cause the car to drive off the road!).
-
-Here's a [link to my video result](./output_project_video.mp4)
-
----
-
-### Discussion
-
-#### 1. Briefly discuss any problems / issues you faced in your implementation of this project.  Where will your pipeline likely fail?  What could you do to make it more robust?
-
-Here I'll talk about the approach I took, what techniques I used, what worked and why, where the pipeline might fail and how I might improve it if I were going to pursue this project further.  
-
-I applied a sanity check and a smoothing technique and those lead me to get better results. To further improve the pipeline a global/local image normalization could be applied in order to better handle bright, dark images and remove shadows. Thresholding and sanity checks could be improved.
