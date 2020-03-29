@@ -292,10 +292,7 @@ void MotionPlanner::UpdateLane_(
     {
         lane_ = lane_preference_;
     }
-
     std::cout << "Lane preference = " << lane_preference_ << std::endl;
-    std::cout << "Lane preference stability = " << lane_preference_stability_ << std::endl << std::endl;
-
     std::cout << "Chosen lane = " << lane_ << std::endl << std::endl;
 }
 
