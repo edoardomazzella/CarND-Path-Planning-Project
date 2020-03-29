@@ -10,7 +10,11 @@ In this project your goal is to safely navigate around a virtual highway with ot
 
 ## Soulution Description
 
-prova
+The `MotionPlanner` class offers the public method `GenerateTrajectory` in order to iteratively compute a path to follow given the information about the car localization, the map and the sensor fusion data.
+The algorithm is composed by several steps and substeps described below:
+* Behavior Planning
+    * prova
+* Prova
 
 ![alt text][image1]
 
