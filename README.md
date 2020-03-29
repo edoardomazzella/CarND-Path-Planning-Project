@@ -4,19 +4,21 @@
 
 In this project your goal is to safely navigate around a virtual highway with other traffic that is driving +-10 MPH of the 50 MPH speed limit. You will be provided the car's localization and sensor fusion data, there is also a sparse map list of waypoints around the highway. The car should try to go as close as possible to the 50 MPH speed limit, which means passing slower traffic when possible, note that other cars will try to change lanes too. The car should avoid hitting other cars at all cost as well as driving inside of the marked road lanes at all times, unless going from one lane to another. The car should be able to make one complete loop around the 6946m highway. Since the car is trying to go 50 MPH, it should take a little over 5 minutes to complete 1 loop. Also the car should not experience total acceleration over 10 m/s^2 and jerk that is greater than 10 m/s^3.
 
-[//]: # "Image References"
-
-[image1]: ./examples/undistort_output.png "Undistorted"
-
 ## Soulution Description
 
 The `MotionPlanner` class offers the public method `GenerateTrajectory` in order to iteratively compute a path to follow given the information about the car localization, the map and the sensor fusion data.
-The algorithm is composed by several steps and substeps described below:
-* Behavior Planning
-    * prova
-* Prova
+The `GenerateTrajectory` algorithm is composed by several steps and substeps briefly described below:
+* 1 `PlanBehavior()` plans the car velocity and the future lane:
+    * 1.1 Assigns each percepted car to a lane.
+    * 1.2 `UpdateTooClose_()` checks if there is a vehicle in the same lane that is too close.
+    * 1.3 `AdaptVelocity_()` adapts the car velocity if there is a vehicle that is too close.
+    * 1.4 `UpdateLane_()` updates the selected lane based on the cost functions `KeepLaneCost_()` and `ChangeLaneCost_()`, the choice must be stable over 10 time steps to activate a lane change action.
+        * 1.4.1 `KeepLaneCost_()` takes as input the main car information and the information about the other cars in the lane (output of step 1.1) and increments the cost of staying in the lane proportionally to the difference of speed with the vehicle in front of us.
+        * 1.4.2 `ChangeLaneCost_()` takes as input the main car information and the information about the other cars in the lane (output of step 1.1) and depending on the distance of the other vehicles and their velocity it increments or decrements the cost of changing lane. The cost is modified differently if the vehicle is ahead of us or behind of us.
+* 2 Trajectory Planning:
+    * Trajectory planning algorithm is the one already described in the project lesson `Project Q&A`. It generates a list of N points spread over a chosen number of meters. After taking a set of reference points from the previous path and computing evenly spaced points ahead of the starting reference, these points are interpolated using a spline based on the chosen number of points and meters.
 
-![alt text][image1]
+Given this information the code is self-descriptive
 
 ## [Rubric](https://review.udacity.com/#!/rubrics/1971/view) Points
 
