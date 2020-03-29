@@ -319,7 +319,8 @@ double MotionPlanner::KeepLaneCost_(
            )
         {
             // cost increment based on the other vehicle velocity
-            lane_cost += ((main_car.speed - other_car.speed) / 2.24) / 50;
+            lane_cost += (((main_car.speed - other_car.speed) / 2.24) /
+                            max_vel_) / 2;
         }
     }
 
@@ -334,7 +335,7 @@ double MotionPlanner::ChangeLaneCost_(
                                      )
 {
     // Changing lane is penalized by default
-    double lane_cost = 0.1;
+    double lane_cost = 0.01;
 
     for (auto other_car : other_cars)
     {
@@ -376,7 +377,8 @@ double MotionPlanner::ChangeLaneCost_(
         }
     }
 
-    return lane_cost;
+    // return a value that is always > 0.01 for changing lane
+    return (lane_cost > 0.01)? lane_cost : 0.01;
 }
 
 /*============================================================================*/
