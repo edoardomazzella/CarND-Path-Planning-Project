@@ -62,6 +62,13 @@ private:
     bool too_close_;
     double ref_vel_ ; /** < Reference velocity */
 
+    /** Function used to plan the high level behavior of the car */
+    void PlanBehavior(
+                      const Car &main_car,
+                      const std::vector<std::vector<double>> &sensor_fusion,
+                      int prev_size
+                     );
+
     /** Function to get car information from sensor fusion data. */
     inline void GetPerceptedCarInformation_(
                                             const std::vector<double> &
@@ -82,10 +89,21 @@ private:
     inline bool isTooClose_() { return too_close_; }
 
     /** Function to adapt the velocity to the other vehicles speed */
-    void AdaptVelocity_();
+    inline void AdaptVelocity_();
 
     /** Function to compute the lane choice cost */
-    void UpdateLane_() {}
+    void UpdateLane_(
+                     const Car &main_car,
+                     std::vector<Car> center_lane_cars,
+                     std::vector<Car> left_lane_cars,
+                     std::vector<Car> right_lane_cars
+                    );
+
+    /** Function to compute the cost of changing lane */
+    double ChangeLaneCost_(
+                           const Car &main_car,
+                           std::vector<Car> center_lane_cars
+                          );
 };
 
 #endif  // PATH_PLANNING_HPP

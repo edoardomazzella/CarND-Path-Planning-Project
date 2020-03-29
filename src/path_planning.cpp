@@ -3,6 +3,7 @@
 #include "spline.h"
 #include <math.h>
 #include <iostream>
+#include <map>
 
 using std::vector;
 
@@ -23,46 +24,8 @@ void MotionPlanner::GenerateTrajectory(
     int prev_size = previous_path.x.size();
     if (prev_size > 0) { main_car.s = previous_path.end_s; }
 
-    vector<Car> center_lane_cars;
-    vector<Car> left_lane_cars;
-    vector<Car> right_lane_cars;
-    // For each percepted car.
-    for (unsigned int i = 0; i < sensor_fusion.size(); i++)
-    {
-        Car other_car;
-        // Obtain coordinates and speed
-        GetPerceptedCarInformation_(sensor_fusion[i], prev_size, other_car);
-
-        // Assign car to a lane
-        int other_car_lane = GetPerceptedCarLane_(other_car.d);
-        switch(other_car_lane)
-        {
-            case 0:
-                left_lane_cars.push_back(other_car);
-                break;
-            case 1:
-                center_lane_cars.push_back(other_car);
-                break;
-            case 2:
-                right_lane_cars.push_back(other_car);
-                break;
-            default:
-                break;
-        }
-
-        // Remember if the car is too close to a vehicle to properly set the velocity.
-        if (other_car_lane == lane_)
-        {
-            UpdateTooClose_(main_car, other_car);
-        }
-    }
-
-    // Adapt the velocity based on the other vehicles observations.
-    AdaptVelocity_();
-    // Update the lane
-    UpdateLane_();
-
-    /* Trajectory Generation */
+    // Plan velocity and choose lane
+    PlanBehavior(main_car, sensor_fusion, prev_size);
 
     // Create a list of widely spaced (x,y) waypoints, evenly spaced at 30m
     // later we will interpolate these waypoints with a spline.
@@ -171,6 +134,55 @@ void MotionPlanner::GenerateTrajectory(
                         Private Member Function Definitions
 ==============================================================================*/
 
+void MotionPlanner::PlanBehavior(
+                                 const Car &main_car,
+                                 const vector<vector<double>> &sensor_fusion,
+                                 int prev_size
+                                )
+{
+    vector<Car> center_lane_cars;
+    vector<Car> left_lane_cars;
+    vector<Car> right_lane_cars;
+    // For each percepted car.
+    for (unsigned int i = 0; i < sensor_fusion.size(); ++i)
+    {
+        Car other_car;
+
+        // Obtain coordinates and speed
+        GetPerceptedCarInformation_(sensor_fusion[i], prev_size, other_car);
+
+        // Assign car to a lane
+        int other_car_lane = GetPerceptedCarLane_(other_car.d);
+        switch(other_car_lane)
+        {
+            case 0:
+                left_lane_cars.push_back(other_car);
+                break;
+            case 1:
+                center_lane_cars.push_back(other_car);
+                break;
+            case 2:
+                right_lane_cars.push_back(other_car);
+                break;
+            default:
+                break;
+        }
+
+        // Remember if the car is too close to a vehicle to properly set the velocity.
+        if (other_car_lane == lane_)
+        {
+            UpdateTooClose_(main_car, other_car);
+        }
+    }
+
+    // Adapt the velocity based on the other vehicles observations.
+    AdaptVelocity_();
+    // Update the lane
+    UpdateLane_(main_car, center_lane_cars, left_lane_cars, right_lane_cars);
+}
+
+/*============================================================================*/
+
 inline void MotionPlanner::GetPerceptedCarInformation_(
                                                        const vector<double>
                                                        &sensor_fusion_data,
@@ -211,7 +223,7 @@ inline void MotionPlanner::UpdateTooClose_(
 
 /*============================================================================*/
 
-void MotionPlanner::AdaptVelocity_()
+inline void MotionPlanner::AdaptVelocity_()
 {
     if (true == isTooClose_())
     {
@@ -225,6 +237,36 @@ void MotionPlanner::AdaptVelocity_()
     {
         // Intentionally left empty.
     }
+}
+
+/*============================================================================*/
+
+void MotionPlanner::UpdateLane_(
+                                const Car &main_car,
+                                std::vector<Car> center_lane_cars,
+                                std::vector<Car> left_lane_cars,
+                                std::vector<Car> right_lane_cars
+                               )
+{
+    std::map< int, double > m;
+    m[0] = ChangeLaneCost_(main_car, left_lane_cars);
+    m[1] = ChangeLaneCost_(main_car, center_lane_cars);
+    m[2] = ChangeLaneCost_(main_car, right_lane_cars);
+
+    double minimum_cost = m[lane_];
+    if (m[0] < minimum_cost) { lane_ = 0; minimum_cost = m[0]; }
+    if (m[1] < minimum_cost) { lane_ = 1; minimum_cost = m[1]; }
+    if (m[2] < minimum_cost) { lane_ = 2; }
+}
+
+/*============================================================================*/
+
+double MotionPlanner::ChangeLaneCost_(
+                                      const Car &main_car,
+                                      std::vector<Car> center_lane_cars
+                                     )
+{
+    return 0;
 }
 
 /*============================================================================*/
