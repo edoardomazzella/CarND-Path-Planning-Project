@@ -85,7 +85,7 @@ private:
     void AdaptVelocity_();
 
     /** Function to compute the lane choice cost */
-    //int FindBestLane_();
+    void UpdateLane_() {}
 };
 
 #endif  // PATH_PLANNING_HPP
