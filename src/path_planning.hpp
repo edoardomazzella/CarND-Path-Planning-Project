@@ -10,6 +10,7 @@
 /* MotionPlanner class definition */
 class MotionPlanner {
 public:
+
     /** Car struct type definition containing car coordinates, yaw and speed. */
     struct Car {
         double x;
@@ -38,11 +39,12 @@ public:
     };
 
     /** MotionPlanner constructor */
-    MotionPlanner(double max_vel, double time_step = .02, int lane = 1,
-                  double trajectory_meters = 30, int points_num = 50) :
-        max_vel_(max_vel), time_step_(time_step), lane_(lane),
+    MotionPlanner(double max_vel, double trajectory_meters = 40,
+                  int points_num = 70) :
+        max_vel_(max_vel), time_step_(.02), lane_(1),
         trajectory_meters_(trajectory_meters), points_num_(points_num),
-        too_close_(false), ref_vel_(0) {}
+        too_close_(false), ref_vel_(0), lane_preference_(1),
+        lane_preference_stability_(0) {}
 
     /** Function that returns the planned trajectory */
     void GenerateTrajectory(
@@ -59,8 +61,12 @@ private:
     int lane_; /** < Selected lane */
     int points_num_; /** < Number of points in the generated trajectory */
     double trajectory_meters_; /** < Length of the trajectory */
-    bool too_close_;
+    bool too_close_; /** < Is the car too close to the front vehicle? */
     double ref_vel_ ; /** < Reference velocity */
+    int lane_preference_; /** < Lane preference */
+    int lane_preference_stability_; /** < Lane preference stability */
+
+/*============================================================================*/
 
     /** Function used to plan the high level behavior of the car */
     void PlanBehavior(
@@ -94,15 +100,21 @@ private:
     /** Function to compute the lane choice cost */
     void UpdateLane_(
                      const Car &main_car,
-                     std::vector<Car> center_lane_cars,
-                     std::vector<Car> left_lane_cars,
-                     std::vector<Car> right_lane_cars
+                     const std::vector<Car> &center_lane_cars,
+                     const std::vector<Car> &left_lane_cars,
+                     const std::vector<Car> &right_lane_cars
                     );
+
+    /** Function to compute the cost of keeping the same lane */
+    double KeepLaneCost_(
+                         const Car &main_car,
+                         const std::vector<Car> &other_cars
+                        );
 
     /** Function to compute the cost of changing lane */
     double ChangeLaneCost_(
                            const Car &main_car,
-                           std::vector<Car> center_lane_cars
+                           const std::vector<Car> &other_cars
                           );
 };
 

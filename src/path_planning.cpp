@@ -3,7 +3,7 @@
 #include "spline.h"
 #include <math.h>
 #include <iostream>
-#include <map>
+#include <utility>
 
 using std::vector;
 
@@ -177,6 +177,7 @@ void MotionPlanner::PlanBehavior(
 
     // Adapt the velocity based on the other vehicles observations.
     AdaptVelocity_();
+
     // Update the lane
     UpdateLane_(main_car, center_lane_cars, left_lane_cars, right_lane_cars);
 }
@@ -243,30 +244,139 @@ inline void MotionPlanner::AdaptVelocity_()
 
 void MotionPlanner::UpdateLane_(
                                 const Car &main_car,
-                                std::vector<Car> center_lane_cars,
-                                std::vector<Car> left_lane_cars,
-                                std::vector<Car> right_lane_cars
+                                const std::vector<Car> &center_lane_cars,
+                                const std::vector<Car> &left_lane_cars,
+                                const std::vector<Car> &right_lane_cars
                                )
 {
-    std::map< int, double > m;
-    m[0] = ChangeLaneCost_(main_car, left_lane_cars);
-    m[1] = ChangeLaneCost_(main_car, center_lane_cars);
-    m[2] = ChangeLaneCost_(main_car, right_lane_cars);
+    vector< std::vector<Car> > lane_cars =
+        { left_lane_cars, center_lane_cars, right_lane_cars };
 
-    double minimum_cost = m[lane_];
-    if (m[0] < minimum_cost) { lane_ = 0; minimum_cost = m[0]; }
-    if (m[1] < minimum_cost) { lane_ = 1; minimum_cost = m[1]; }
-    if (m[2] < minimum_cost) { lane_ = 2; }
+    // Initialize the best lane and its cost with the current lane values
+    std::pair < int, double > best_lane_and_cost =
+        { lane_, KeepLaneCost_(main_car, lane_cars[lane_]) };
+
+    std::cout <<  "My lane cost = " << best_lane_and_cost.second << std::endl;
+    for (int i = 0; i < 3; ++i)
+    {
+        // Consider only the lanes next to you
+        if (fabs(i - lane_) == 1)
+        {
+            // Compute the cost of changing lane
+            double cost = ChangeLaneCost_(main_car, lane_cars[i]);
+            // If the cost is minimum store the id and the cost
+            if (cost < best_lane_and_cost.second)
+            {
+                best_lane_and_cost = { i, cost };
+            }
+            std::cout <<  "Lane[" << i << "] cost = " << cost << std::endl;
+        }
+    }
+
+    // Compare the current preference with the previous one and update the
+    // stability of the preference
+    if (best_lane_and_cost.first == lane_preference_)
+    {
+        if(lane_preference_stability_ + 1 <= 10)
+        {
+            lane_preference_stability_++;
+        }
+    }
+    else
+    {
+        lane_preference_ = best_lane_and_cost.first;
+        lane_preference_stability_ = 0;
+    }
+    // Update the lane if the stability is >= 10
+    if (lane_ != lane_preference_ && lane_preference_stability_ >= 10)
+    {
+        lane_ = lane_preference_;
+    }
+
+    std::cout << "Lane preference = " << lane_preference_ << std::endl;
+    std::cout << "Lane preference stability = " << lane_preference_stability_ << std::endl << std::endl;
+
+    std::cout << "Chosen lane = " << lane_ << std::endl << std::endl;
+}
+
+/*============================================================================*/
+
+double MotionPlanner::KeepLaneCost_(
+                                    const Car &main_car,
+                                    const std::vector<Car> &other_cars
+                                   )
+{
+    double lane_cost = 0;
+
+    // Increment the cost of keeping the lane if there is a slow vehicle
+    // in front of us
+    for (auto other_car : other_cars)
+    {
+        if (
+            (main_car.s < other_car.s) &&
+            ((other_car.s - main_car.s) < trajectory_meters_) &&
+            (other_car.speed <= main_car.speed)
+           )
+        {
+            // cost increment based on the other vehicle velocity
+            lane_cost += ((main_car.speed - other_car.speed) / 2.24) / 50;
+        }
+    }
+
+    return lane_cost;
 }
 
 /*============================================================================*/
 
 double MotionPlanner::ChangeLaneCost_(
                                       const Car &main_car,
-                                      std::vector<Car> center_lane_cars
+                                      const std::vector<Car> &other_cars
                                      )
 {
-    return 0;
+    // Changing lane is penalized by default
+    double lane_cost = 0.1;
+
+    for (auto other_car : other_cars)
+    {
+        // If there is a vehicle behind us increment the cost
+        if (
+            (main_car.s >= other_car.s) &&
+            ((main_car.s - other_car.s) < trajectory_meters_)
+           )
+        {
+            // cost increment (negative rvalue) based on the other vehicle
+            // position.
+            // Examples:
+            // trajectory_meters_ of distance -> cost increment = 0.0
+            // trajectory_meters_/2 of distance -> cost increment = 0.25
+            // 0m of distance -> cost increment = 0.5
+            lane_cost -= (((main_car.s - other_car.s) - trajectory_meters_) /
+                            trajectory_meters_) / 2;
+            // cost increment/decrement based on the other vehicle velocity
+            // Examples:
+            // max_vel_ of difference -> cost increment/decrement = 0.5
+            // max_vel_/2 of distance -> cost increment/decrement = 0.25
+            // 0 speed difference -> cost increment/decement = 0.0
+            lane_cost += (((other_car.speed - main_car.speed) / 2.24) /
+                            max_vel_) / 2;
+        }
+        // If there is a vehicle in front of us increment the cost
+        if (
+            (main_car.s < other_car.s) &&
+            ((other_car.s - main_car.s) < trajectory_meters_)
+           )
+        {
+            // cost increment (negative rvalue) based on the other vehicle
+            // position.
+            lane_cost -= (((other_car.s - main_car.s) - trajectory_meters_) /
+                            trajectory_meters_) / 2;
+            // cost increment/decrement based on the other vehicle velocity
+            lane_cost += (((main_car.speed - other_car.speed) / 2.24) /
+                            max_vel_) / 2;
+        }
+    }
+
+    return lane_cost;
 }
 
 /*============================================================================*/
