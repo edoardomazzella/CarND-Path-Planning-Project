@@ -39,9 +39,10 @@ public:
 
     /** MotionPlanner constructor */
     MotionPlanner(double max_vel, double time_step = .02, int lane = 1,
-                  int points_num = 50) :
+                  double trajectory_meters = 30, int points_num = 50) :
         max_vel_(max_vel), time_step_(time_step), lane_(lane),
-        points_num_(points_num), ref_vel_(0) {}
+        trajectory_meters_(trajectory_meters), points_num_(points_num),
+        too_close_(false), ref_vel_(0) {}
 
     /** Function that returns the planned trajectory */
     void GenerateTrajectory(
@@ -57,10 +58,32 @@ private:
     double time_step_; /** < Time step */
     int lane_; /** < Selected lane */
     int points_num_; /** < Number of points in the generated trajectory */
+    double trajectory_meters_; /** < Length of the trajectory */
+    bool too_close_;
     double ref_vel_ ; /** < Reference velocity */
 
-    /** Function to adapt velocity */
-    //double AdaptVelocity_(const Car &main_car, const Car &car_in_lane);
+    /** Function to get car information from sensor fusion data. */
+    inline void GetPerceptedCarInformation_(
+                                            const std::vector<double> &
+                                            sensor_fusion_data, int prev_size,
+                                            Car &other_car
+                                           );
+
+    /** Function to get car information from sensor fusion data. */
+    inline int GetPerceptedCarLane_(double other_car_d)
+    {
+        return other_car_d / 4;
+    }
+
+    /** Set too_close_ to true if the car is too close */
+    inline void UpdateTooClose_(const Car &main_car, const Car &car_in_lane);
+
+    /** Get too_close_ value */
+    inline bool isTooClose_() { return too_close_; }
+
+    /** Function to adapt the velocity to the other vehicles speed */
+    void AdaptVelocity_();
+
     /** Function to compute the lane choice cost */
     //int FindBestLane_();
 };

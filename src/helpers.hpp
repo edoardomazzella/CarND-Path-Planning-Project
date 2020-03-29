@@ -4,6 +4,14 @@
 #include <string>
 #include <vector>
 
+#define id_idx 0u
+#define x_idx  1u
+#define y_idx  2u
+#define vx_idx 3u
+#define vy_idx 4u
+#define s_idx  5u
+#define d_idx  6u
+
 /*==============================================================================
                             Function Declarations
 ==============================================================================*/

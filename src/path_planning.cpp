@@ -11,7 +11,7 @@ using std::vector;
 ==============================================================================*/
 
 void MotionPlanner::GenerateTrajectory(
-                                       Car &car, const Map &map,
+                                       Car &main_car, const Map &map,
                                        const Path &previous_path,
                                        const vector<vector<double>> &
                                        sensor_fusion,
@@ -19,77 +19,72 @@ void MotionPlanner::GenerateTrajectory(
                                        vector<double> &next_y_vals
                                       )
 {
+    too_close_ = false;
     int prev_size = previous_path.x.size();
+    if (prev_size > 0) { main_car.s = previous_path.end_s; }
 
-    if (prev_size > 0) { car.s = previous_path.end_s; }
-
-    bool too_close = false;
+    vector<Car> center_lane_cars;
+    vector<Car> left_lane_cars;
+    vector<Car> right_lane_cars;
     // For each percepted car.
     for (unsigned int i = 0; i < sensor_fusion.size(); i++)
     {
         Car other_car;
+        // Obtain coordinates and speed
+        GetPerceptedCarInformation_(sensor_fusion[i], prev_size, other_car);
 
-        // If other_car is in my lane.
-        other_car.d = sensor_fusion[i][6];
-        if (
-            other_car.d < (2 + 4 * lane_ + 2) &&
-            other_car.d > (2 + 4 * lane_ - 2)
-           )
+        // Assign car to a lane
+        int other_car_lane = GetPerceptedCarLane_(other_car.d);
+        switch(other_car_lane)
         {
-            double vx = sensor_fusion[i][3];
-            double vy = sensor_fusion[i][4];
-            other_car.speed = sqrt(pow(vx, 2.0) + pow(vy, 2.0));
+            case 0:
+                left_lane_cars.push_back(other_car);
+                break;
+            case 1:
+                center_lane_cars.push_back(other_car);
+                break;
+            case 2:
+                right_lane_cars.push_back(other_car);
+                break;
+            default:
+                break;
+        }
 
-            // Predict where the other car will be in the future based on speed.
-            other_car.s = sensor_fusion[i][5] + ((double) prev_size *
-                          time_step_ * other_car.speed);
-
-            // Check s values greater than mine and s gap.
-            if ((other_car.s > car.s) && (other_car.s - car.s) < 30)
-            {
-                too_close = true;
-                if (lane_ > 0)
-                {
-                    lane_ = 0;
-                }
-            }
+        // Remember if the car is too close to a vehicle to properly set the velocity.
+        if (other_car_lane == lane_)
+        {
+            UpdateTooClose_(main_car, other_car);
         }
     }
 
-    if (true == too_close)
-    {
-        ref_vel_ -=.224;
-    }
-    else if (ref_vel_ < max_vel_)
-    {
-        ref_vel_ += .224;
-    }
-    else
-    {
-        // Intentionally left empty.
-    }
+    // Adapt the velocity based on the other vehicles observations.
+    AdaptVelocity_();
+    // Update the lane
+    UpdateLane_();
+
+    /* Trajectory Generation */
 
     // Create a list of widely spaced (x,y) waypoints, evenly spaced at 30m
     // later we will interpolate these waypoints with a spline.
     vector<double> ptsx, ptsy;
 
     // Reference x, y and yaw
-    double ref_x = car.x;
-    double ref_y = car.y;
-    double ref_yaw = deg2rad(car.yaw);
+    double ref_x = main_car.x;
+    double ref_y = main_car.y;
+    double ref_yaw = deg2rad(main_car.yaw);
 
     // If previous size is almost empty, use the car as starting reference.
     if (prev_size < 2)
     {
         // Use two points that make the path tangent to the car.
-        double prev_car_x = car.x - cos(car.yaw);
-        double prev_car_y = car.y - sin(car.yaw);
+        double prev_car_x = main_car.x - cos(main_car.yaw);
+        double prev_car_y = main_car.y - sin(main_car.yaw);
 
         ptsx.push_back(prev_car_x);
-        ptsx.push_back(car.x);
+        ptsx.push_back(main_car.x);
 
         ptsy.push_back(prev_car_y);
-        ptsy.push_back(car.y);
+        ptsy.push_back(main_car.y);
     }
     // Else use the previous path's end point as starting reference.
     else
@@ -111,9 +106,11 @@ void MotionPlanner::GenerateTrajectory(
     for (unsigned int i = 0; i < 3; ++i)
     {
         vector<double> next_wp = getXY(
-                                        car.s + (i + 1) * 30, (2 + 4 * lane_),
-                                        map.waypoints_s, map.waypoints_x,
-                                        map.waypoints_y
+                                       main_car.s + (i + 1) *
+                                       trajectory_meters_,
+                                       (2 + 4 * lane_),
+                                       map.waypoints_s, map.waypoints_x,
+                                       map.waypoints_y
                                       );
         ptsx.push_back(next_wp[0]);
         ptsy.push_back(next_wp[1]);
@@ -143,7 +140,7 @@ void MotionPlanner::GenerateTrajectory(
 
     // Calculate how to break up spline points so that we travel at our desired
     // reference velocity.
-    double target_x = 30.0;
+    double target_x = trajectory_meters_;
     double target_y = s(target_x);
     double target_dist = sqrt(pow(target_x, 2.0) + pow(target_y, 2.0));
 
@@ -151,7 +148,7 @@ void MotionPlanner::GenerateTrajectory(
     double x_add_on = 0;
     for (unsigned int i = 1; i <= points_num_ - prev_size; ++i)
     {
-        double ref_vel_mps = ref_vel_ / 2.24; // conversion to meters/second.
+        double ref_vel_mps = ref_vel_ / 2.24; // conversion from mph/h to m/s.
         double N = target_dist / (time_step_ * (ref_vel_mps));
         double x_point = x_add_on + target_x / N;
         double y_point = s(x_point);
@@ -174,6 +171,60 @@ void MotionPlanner::GenerateTrajectory(
                         Private Member Function Definitions
 ==============================================================================*/
 
+inline void MotionPlanner::GetPerceptedCarInformation_(
+                                                       const vector<double>
+                                                       &sensor_fusion_data,
+                                                       int prev_size,
+                                                       Car &other_car
+                                                      )
+{
+     // Other car global coordinates
+    other_car.x = sensor_fusion_data[x_idx];
+    other_car.y = sensor_fusion_data[y_idx];
+    // Other car speed
+    double vx = sensor_fusion_data[vx_idx];
+    double vy = sensor_fusion_data[vy_idx];
+    other_car.speed = sqrt(pow(vx, 2.0) + pow(vy, 2.0));
+    // Predict where the other car will be in the future based on speed.
+    other_car.s = sensor_fusion_data[s_idx] + ((double) prev_size *
+                  time_step_ * other_car.speed);
+    // Other car distance from reference trajectory
+    other_car.d = sensor_fusion_data[d_idx];
+}
 
+/*============================================================================*/
+
+inline void MotionPlanner::UpdateTooClose_(
+                                           const Car &main_car,
+                                           const Car &car_in_lane
+                                          )
+{
+    // Check s values greater than mine and s gap.
+    if (
+        (car_in_lane.s > main_car.s) &&
+        ((car_in_lane.s - main_car.s) < trajectory_meters_)
+        )
+    {
+        too_close_ = true;
+    }
+}
+
+/*============================================================================*/
+
+void MotionPlanner::AdaptVelocity_()
+{
+    if (true == isTooClose_())
+    {
+        ref_vel_ -=.224;
+    }
+    else if (ref_vel_ < max_vel_)
+    {
+        ref_vel_ += .224;
+    }
+    else
+    {
+        // Intentionally left empty.
+    }
+}
 
 /*============================================================================*/
